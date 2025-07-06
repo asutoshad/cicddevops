@@ -3,7 +3,3 @@ this is
 asutosh
 test(blog): add integration tests for comment creation
 git merge --no-ff feature-A -m "test(blog): merge feature-A with integration tests"
-kj 
-A
-ae
-cx
