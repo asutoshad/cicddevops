@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Validate commit messages (Conventional Commits)
+      - uses: actions/checkout@v4
+
+      - name: Validate PR title (Conventional Commits)
         uses: amannn/action-semantic-pull-request@v5
         with:
           types: |
@@ -30,30 +32,42 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check all commit messages in PR
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git log origin/${{ github.base_ref }}..HEAD --pretty=format:"%s" | while read line; do
+            echo "$line"
+            echo "$line" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
+              echo " Commit message '$line' does not follow Conventional Commits."
+              exit 1
+            }
+          done
+
   validate-push:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Validate latest commit message (Conventional Commits)
+      - name: Validate latest non-merge commit message (Conventional Commits)
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          echo "Last commit message: '$COMMIT_MSG'"
+          COMMIT_MSG=$(git log --no-merges -1 --pretty=%B)
+          echo "Last non-merge commit message: '$COMMIT_MSG'"
           echo "$COMMIT_MSG" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
             echo " Commit message does not follow Conventional Commits."
             exit 1
           }
 
   build-and-push:
-    runs-on: ubuntu-latest
     needs: [validate-pr, validate-push]
+    if: |
+      (github.event_name == 'pull_request' && needs.validate-pr.result == 'success') ||
+      (github.event_name == 'push' && needs.validate-push.result == 'success')
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
