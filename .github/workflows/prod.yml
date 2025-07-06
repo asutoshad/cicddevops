@@ -7,8 +7,25 @@ on:
       - 'v*.*.*'
 
 jobs:
+  validate-prod-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate latest commit message (Conventional Commits)
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Last commit message: '$COMMIT_MSG'"
+          echo "$COMMIT_MSG" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
+            echo " Commit message does not follow Conventional Commits."
+            exit 1
+          }
+
   build-and-push:
     runs-on: ubuntu-latest
+    needs: validate-prod-commit
     environment: production
 
     steps:
