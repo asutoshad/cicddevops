@@ -3,6 +3,7 @@
 FROM node:18-alpine AS builder
 
 WORKDIR /app
+ENV YARN_NETWORK_TIMEOUT 600000
 COPY package.json yarn.lock ./
 RUN yarn install
 COPY . .
