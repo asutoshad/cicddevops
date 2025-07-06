@@ -97,4 +97,4 @@ jobs:
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/frontend:dev-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/frontend:dev-${{ github.sha }} 
