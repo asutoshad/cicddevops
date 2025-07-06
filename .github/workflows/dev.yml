@@ -43,8 +43,8 @@ jobs:
             }
           done
 
-  validate-push:
-    if: github.event_name == 'push'
+  validate-feature-push:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
     runs-on: ubuntu-latest
 
     steps:
@@ -60,11 +60,12 @@ jobs:
           }
 
   build-and-push:
-    needs: [validate-pr, validate-push]
+    runs-on: ubuntu-latest
+    needs: [validate-pr, validate-feature-push]
     if: |
       (github.event_name == 'pull_request' && needs.validate-pr.result == 'success') ||
-      (github.event_name == 'push' && needs.validate-push.result == 'success')
-    runs-on: ubuntu-latest
+      (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/feature/'))) &&
+      (github.ref != 'refs/heads/feature/' || needs.validate-feature-push.result == 'success')
 
     steps:
       - uses: actions/checkout@v4
@@ -78,23 +79,29 @@ jobs:
           username: ${{ secrets.CICD_USERNAME }}
           password: ${{ secrets.CICD_PASSWORD }}
 
-      - name: Build and push backend1 (dev)
+      - name: Build and push backend1 (dev/feature)
         uses: docker/build-push-action@v5
         with:
           context: ./backend1
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend1:dev-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend1:${
+            { github.ref == 'refs/heads/dev' && 'dev' || 'feature' }
+          }-${{ github.sha }}
 
-      - name: Build and push backend2 (dev)
+      - name: Build and push backend2 (dev/feature)
         uses: docker/build-push-action@v5
         with:
           context: ./backend2
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend2:dev-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend2:${
+            { github.ref == 'refs/heads/dev' && 'dev' || 'feature' }
+          }-${{ github.sha }}
 
-      - name: Build and push frontend (dev)
+      - name: Build and push frontend (dev/feature)
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/frontend:dev-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/frontend:${
+            { github.ref == 'refs/heads/dev' && 'dev' || 'feature' }
+          }-${{ github.sha }}
