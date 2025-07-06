@@ -6,3 +6,4 @@ git merge --no-ff feature-A -m "test(blog): merge feature-A with integration tes
 kj 
 A
 ae
+cx
