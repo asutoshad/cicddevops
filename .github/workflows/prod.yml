@@ -1,70 +1,32 @@
-name: CI/CD - Dev Environment
+name: CI/CD - Production Environment
 
 on:
   push:
     branches:
-      - dev
-      - 'feature/**'
-  pull_request:
-    branches:
-      - dev
+      - main
+    tags:
+      - 'v*.*.*'
 
 jobs:
-  validate-pr:
-    if: github.event_name == 'pull_request'
+  validate-prod-commit:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate PR title (Conventional Commits)
-        uses: amannn/action-semantic-pull-request@v5
-        with:
-          types: |
-            feat
-            fix
-            chore
-            docs
-            style
-            refactor
-            test
-            perf
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check all commit messages in PR
+      - name: Validate latest commit message (Conventional Commits)
         run: |
-          git fetch origin ${{ github.base_ref }} --depth=1
-          git log origin/${{ github.base_ref }}..HEAD --pretty=format:"%s" | while read line; do
-            echo "$line"
-            echo "$line" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
-              echo " Commit message '$line' does not follow Conventional Commits."
-              exit 1
-            }
-          done
-
-  validate-push:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate latest non-merge commit message (Conventional Commits)
-        run: |
-          COMMIT_MSG=$(git log --no-merges -1 --pretty=%B)
-          echo "Last non-merge commit message: '$COMMIT_MSG'"
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Last commit message: '$COMMIT_MSG'"
           echo "$COMMIT_MSG" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
             echo " Commit message does not follow Conventional Commits."
             exit 1
           }
 
   build-and-push:
-    needs: [validate-pr, validate-push]
-    if: |
-      (github.event_name == 'pull_request' && needs.validate-pr.result == 'success') ||
-      (github.event_name == 'push' && needs.validate-push.result == 'success')
+    needs: validate-prod-commit
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -78,23 +40,23 @@ jobs:
           username: ${{ secrets.CICD_USERNAME }}
           password: ${{ secrets.CICD_PASSWORD }}
 
-      - name: Build and push backend1 (dev)
+      - name: Build and push backend1 (prod)
         uses: docker/build-push-action@v5
         with:
           context: ./backend1
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend1:dev-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend1:${{ github.ref_name }}
 
-      - name: Build and push backend2 (dev)
+      - name: Build and push backend2 (prod)
         uses: docker/build-push-action@v5
         with:
           context: ./backend2
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend2:dev-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend2:${{ github.ref_name }}
 
-      - name: Build and push frontend (dev)
+      - name: Build and push frontend (prod)
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/frontend:dev-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/frontend:${{ github.ref_name }}
