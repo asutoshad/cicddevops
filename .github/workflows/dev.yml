@@ -67,6 +67,9 @@ jobs:
       (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/feature/'))) &&
       (github.ref != 'refs/heads/feature/' || needs.validate-feature-push.result == 'success')
 
+    env:
+      TAG_PREFIX: ${{ github.ref == 'refs/heads/dev' && 'dev' || 'feature' }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -84,24 +87,18 @@ jobs:
         with:
           context: ./backend1
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend1:${
-            { github.ref == 'refs/heads/dev' && 'dev' || 'feature' }
-          }-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend1:${{ env.TAG_PREFIX }}-${{ github.sha }}
 
       - name: Build and push backend2 (dev/feature)
         uses: docker/build-push-action@v5
         with:
           context: ./backend2
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend2:${
-            { github.ref == 'refs/heads/dev' && 'dev' || 'feature' }
-          }-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend2:${{ env.TAG_PREFIX }}-${{ github.sha }}
 
       - name: Build and push frontend (dev/feature)
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/frontend:${
-            { github.ref == 'refs/heads/dev' && 'dev' || 'feature' }
-          }-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/frontend:${{ env.TAG_PREFIX }}-${{ github.sha }}
