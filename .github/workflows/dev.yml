@@ -102,3 +102,4 @@ jobs:
           context: ./frontend
           push: true
           tags: ${{ secrets.CICD_USERNAME }}/frontend:${{ env.TAG_PREFIX }}-${{ github.sha }}
+ 
