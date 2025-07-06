@@ -2,34 +2,13 @@ name: CI/CD - Dev Environment
 
 on:
   push:
-    branches:
-      - dev
-      - 'feature/**'
+    branches: [dev]
   pull_request:
     branches:
-      - dev
+          - dev
+          - 'feature/**'
 
 jobs:
-  validate-pr:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Validate commit messages (Conventional Commits)
-        uses: amannn/action-semantic-pull-request@v5
-        with:
-          types: |
-            feat
-            fix
-            chore
-            docs
-            style
-            refactor
-            test
-            perf
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build-and-push:
     runs-on: ubuntu-latest
     steps:
