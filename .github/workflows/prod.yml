@@ -19,7 +19,7 @@ jobs:
           COMMIT_MSG=$(git log -1 --pretty=%B)
           echo "Last commit message: '$COMMIT_MSG'"
           echo "$COMMIT_MSG" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
-            echo "❌ Commit message does not follow Conventional Commits."
+            echo " Commit message does not follow Conventional Commits."
             exit 1
           }
 
