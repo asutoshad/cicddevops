@@ -4,3 +4,4 @@ git merge --no-ff feature-A -m "test(blog): merge feature-A with integration tes
 test 1
 test 2
 test 3
+test 4
