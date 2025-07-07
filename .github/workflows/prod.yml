@@ -26,8 +26,11 @@ jobs:
 
       - name: Bump version (minor)
         run: |
-          VERSION=$(node scripts/version-bump.js minor | tee /dev/stderr | grep -oP '(?<=Bumped .* → )\d+\.\d+\.\d+')
+          OUTPUT=$(node scripts/version-bump.js minor)
+          echo "$OUTPUT"
+          VERSION=$(echo "$OUTPUT" | sed -nE 's/^Bumped .* → ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+
 
       - name: Tag and push version to GitHub
         run: |
