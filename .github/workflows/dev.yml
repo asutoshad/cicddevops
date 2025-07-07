@@ -4,14 +4,14 @@ on:
   push:
     branches:
       - dev
-      - 'feature/**'
+      - 'feature-*'
   pull_request:
     branches:
       - dev
 
 jobs:
   validate-feature-push:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature-')
     runs-on: ubuntu-latest
 
     steps:
@@ -32,7 +32,8 @@ jobs:
     if: |
       github.event_name == 'push' &&
       (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/feature/')) &&
-      (github.ref != 'refs/heads/feature/' || needs.validate-feature-push.result == 'success')
+      (!startsWith(github.ref, 'refs/heads/feature-') || needs.validate-feature-push.result == 'success')
+
 
     env:
       TAG_PREFIX: ${{ github.ref == 'refs/heads/dev' && 'dev' || 'feature' }}
