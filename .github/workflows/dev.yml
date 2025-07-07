@@ -4,14 +4,12 @@ on:
   push:
     branches:
       - dev
-      - 'feature/**'
-  pull_request:
-    branches:
-      - dev
+      - 'feature-*'
 
 jobs:
+
   validate-feature-push:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature-')
     runs-on: ubuntu-latest
 
     steps:
@@ -26,16 +24,13 @@ jobs:
             exit 1
           }
 
-  build-and-push:
+ 
+  build-and-push-dev:
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    needs: [validate-feature-push]
-    if: |
-      github.event_name == 'push' &&
-      (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/feature/')) &&
-      (github.ref != 'refs/heads/feature/' || needs.validate-feature-push.result == 'success')
 
     env:
-      TAG_PREFIX: ${{ github.ref == 'refs/heads/dev' && 'dev' || 'feature' }}
+      TAG_PREFIX: dev
 
     steps:
       - uses: actions/checkout@v4
