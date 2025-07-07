@@ -4,16 +4,40 @@ on:
   push:
     branches:
       - main
-    tags:
-      - 'v*.*.*'
 
 jobs:
   build-and-push-prod:
     runs-on: ubuntu-latest
     environment: production
 
+    env:
+      TAG_PREFIX: prod
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version (minor)
+        run: |
+          VERSION=$(node scripts/version-bump.js minor | tee /dev/stderr | grep -oP '(?<=Bumped .* → )\d+\.\d+\.\d+')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Tag and push version to GitHub
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add VERSION
+          git commit -m "chore(release): bump to v${VERSION}"
+          git tag v${VERSION}
+          git push origin HEAD
+          git push origin v${VERSION}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -29,18 +53,18 @@ jobs:
         with:
           context: ./backend1
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend1:${{ github.ref_name }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend1:prod-${{ env.VERSION }}
 
       - name: Build and push backend2 (prod)
         uses: docker/build-push-action@v5
         with:
           context: ./backend2
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend2:${{ github.ref_name }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend2:prod-${{ env.VERSION }}
 
       - name: Build and push frontend (prod)
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/frontend:${{ github.ref_name }}
+          tags: ${{ secrets.CICD_USERNAME }}/frontend:prod-${{ env.VERSION }}

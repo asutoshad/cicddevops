@@ -15,16 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate latest non-merge commit message (Conventional Commits)
+      - name: Validate latest non-merge commit message
         run: |
           COMMIT_MSG=$(git log --no-merges -1 --pretty=%B)
-          echo "Last non-merge commit message: '$COMMIT_MSG'"
           echo "$COMMIT_MSG" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
-            echo " Commit message does not follow Conventional Commits."
+            echo "Invalid commit message."
             exit 1
           }
 
- 
   build-and-push-dev:
     if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -34,6 +32,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version (patch)
+        run: |
+          VERSION=$(node scripts/version-bump.js patch | tee /dev/stderr | grep -oP '(?<=Bumped .* → )\d+\.\d+\.\d+')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -49,18 +60,18 @@ jobs:
         with:
           context: ./backend1
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend1:${{ env.TAG_PREFIX }}-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend1:dev-${{ env.VERSION }}
 
       - name: Build and push backend2
         uses: docker/build-push-action@v5
         with:
           context: ./backend2
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend2:${{ env.TAG_PREFIX }}-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend2:dev-${{ env.VERSION }}
 
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/frontend:${{ env.TAG_PREFIX }}-${{ github.sha }}
+          tags: ${{ secrets.CICD_USERNAME }}/frontend:dev-${{ env.VERSION }}
