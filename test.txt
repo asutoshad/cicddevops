@@ -2,3 +2,4 @@
 test(blog): add integration tests for comment creation
 git merge --no-ff feature-A -m "test(blog): merge feature-A with integration tests"
 test 1
+test 2
