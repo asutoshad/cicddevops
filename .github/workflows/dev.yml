@@ -71,6 +71,7 @@ jobs:
           push: true
           tags: ${{ secrets.CICD_USERNAME }}/backend2:dev-${{ env.VERSION }}
 
+
   build-and-push-frontend:
     if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
     runs-on: [self-hosted, frontend]
