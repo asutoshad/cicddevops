@@ -1,23 +1,54 @@
-name: CI/CD - Production Environment
+name: CI/CD - Dev Environment
 
 on:
   push:
     branches:
-      - main
-
-
-permissions:
-  contents: write
-  id-token: write
+      - dev
+      - 'feature-*'
 
 jobs:
-  build-and-push-prod:
+  changes:
     runs-on: ubuntu-latest
-    environment: production
+    outputs:
+      backend1: ${{ steps.filter.outputs.backend1 }}
+      backend2: ${{ steps.filter.outputs.backend2 }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend1:
+              - 'backend1/**'
+            backend2:
+              - 'backend2/**'
+            frontend:
+              - 'frontend/**'
 
-    env:
-      TAG_PREFIX: prod
+  validate-feature-push:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate latest non-merge commit message
+        run: |
+          COMMIT_MSG=$(git log --no-merges -1 --pretty=%B)
+          echo "$COMMIT_MSG" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
+            echo "Invalid commit message."
+            exit 1
+          }
 
+  setup-and-bump-version:
+    needs: changes
+    if: github.ref == 'refs/heads/dev' && (
+          needs.changes.outputs.backend1 == 'true' ||
+          needs.changes.outputs.backend2 == 'true' ||
+          needs.changes.outputs.frontend == 'true'
+        )
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.setver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,52 +60,70 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Bump version (minor)
+      - name: Bump version (patch)
+        id: setver
         run: |
-          OUTPUT=$(node scripts/version-bump.js minor)
+          OUTPUT=$(node scripts/version-bump.js patch)
           echo "$OUTPUT"
           VERSION=$(echo "$OUTPUT" | sed -nE 's/^Bumped .* → ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-
-      - name: Tag and push version to GitHub
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add VERSION
-          git commit -m "chore(release): bump to v${VERSION}"
-          git tag v${VERSION}
-          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }} HEAD
-          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }} v${VERSION}
-
-
-
+  build-and-push-backend1:
+    needs: [changes, setup-and-bump-version]
+    if: needs.changes.outputs.backend1 == 'true' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
       - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.CICD_USERNAME }}
           password: ${{ secrets.CICD_PASSWORD }}
-
-      - name: Build and push backend1 (prod)
+      - name: Build and push backend1
         uses: docker/build-push-action@v5
         with:
           context: ./backend1
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend1:prod-${{ env.VERSION }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend1:dev-${{ needs.setup-and-bump-version.outputs.version }}
 
-      - name: Build and push backend2 (prod)
+  build-and-push-backend2:
+    needs: [changes, setup-and-bump-version]
+    if: needs.changes.outputs.backend2 == 'true' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.CICD_USERNAME }}
+          password: ${{ secrets.CICD_PASSWORD }}
+      - name: Build and push backend2
         uses: docker/build-push-action@v5
         with:
           context: ./backend2
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend2:prod-${{ env.VERSION }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend2:dev-${{ needs.setup-and-bump-version.outputs.version }}
 
-      - name: Build and push frontend (prod)
+  build-and-push-frontend:
+    needs: [changes, setup-and-bump-version]
+    if: needs.changes.outputs.frontend == 'true' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.CICD_USERNAME }}
+          password: ${{ secrets.CICD_PASSWORD }}
+      - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/frontend:prod-${{ env.VERSION }}
+          tags: ${{ secrets.CICD_USERNAME }}/frontend:dev-${{ needs.setup-and-bump-version.outputs.version }}
