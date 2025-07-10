@@ -37,7 +37,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - name: Install dependencies (root)
         run: yarn install --frozen-lockfile
 
@@ -59,7 +59,7 @@ jobs:
       - name: Use Node.js for backend1
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies (backend1)
         run: yarn install --frozen-lockfile
@@ -101,7 +101,7 @@ jobs:
       - name: Use Node.js for backend2
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies (backend2)
         run: yarn install --frozen-lockfile
@@ -143,7 +143,7 @@ jobs:
       - name: Use Node.js for frontend
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies (frontend)
         run: yarn install --frozen-lockfile
