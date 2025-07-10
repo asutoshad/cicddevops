@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "homepage": "https://github.com/asutoshad/cicddevops"
+
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.31.9",

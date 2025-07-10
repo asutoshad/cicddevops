@@ -51,9 +51,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - name: Install dependencies (root)
-        run: npm ci
+        run: yarn install --frozen-lockfile
+
       - name: Bump version (patch)
         id: setver
         run: |
@@ -72,10 +73,11 @@ jobs:
       - name: Use Node.js for backend1
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies (backend1)
-        run: npm ci
+        run: yarn install --frozen-lockfile
+
         working-directory: ./backend1
 
       - name: Build backend1
@@ -98,7 +100,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Upload backend1 build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend1-build-${{ needs.setup-and-bump-version.outputs.version }}
           path: ./backend1/dist
@@ -113,10 +115,11 @@ jobs:
       - name: Use Node.js for backend2
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies (backend2)
-        run: npm ci
+        run: yarn install --frozen-lockfile
+
         working-directory: ./backend2
 
       - name: Build backend2
@@ -139,7 +142,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Upload backend2 build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend2-build-${{ needs.setup-and-bump-version.outputs.version }}
           path: ./backend2/dist
@@ -154,10 +157,11 @@ jobs:
       - name: Use Node.js for frontend
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies (frontend)
-        run: npm ci
+        run: yarn install --frozen-lockfile
+
         working-directory: ./frontend
 
       - name: Build frontend
@@ -180,7 +184,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Upload frontend build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build-${{ needs.setup-and-bump-version.outputs.version }}
           path: ./frontend/dist
