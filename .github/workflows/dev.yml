@@ -103,7 +103,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend1-build-${{ needs.setup-and-bump-version.outputs.version }}
-          path: ./backend1/build
+          path: ./backend1/dist
 
   build-and-push-backend2:
     needs: [changes, setup-and-bump-version]
@@ -145,7 +145,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend2-build-${{ needs.setup-and-bump-version.outputs.version }}
-          path: ./backend2/build
+          path: ./backend2/dist
 
   build-and-push-frontend:
     needs: [changes, setup-and-bump-version]
@@ -187,4 +187,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build-${{ needs.setup-and-bump-version.outputs.version }}
-          path: ./frontend/build
+          path: ./frontend/dist
