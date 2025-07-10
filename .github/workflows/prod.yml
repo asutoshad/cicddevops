@@ -1,10 +1,9 @@
-name: CI/CD - Dev Environment
+name: CI/CD - Production Environment
 
 on:
   push:
     branches:
-      - dev
-      - 'feature-*'
+      - main
 
 jobs:
   changes:
@@ -26,104 +25,81 @@ jobs:
             frontend:
               - 'frontend/**'
 
-  validate-feature-push:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature-')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate latest non-merge commit message
-        run: |
-          COMMIT_MSG=$(git log --no-merges -1 --pretty=%B)
-          echo "$COMMIT_MSG" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|perf)(\(.+\))?: .+' || {
-            echo "Invalid commit message."
-            exit 1
-          }
-
   setup-and-bump-version:
     needs: changes
-    if: github.ref == 'refs/heads/dev' && (
-          needs.changes.outputs.backend1 == 'true' ||
-          needs.changes.outputs.backend2 == 'true' ||
-          needs.changes.outputs.frontend == 'true'
-        )
+    if: needs.changes.outputs.backend1 == 'true' || needs.changes.outputs.backend2 == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.setver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
       - name: Install dependencies
         run: npm ci
-
-      - name: Bump version (patch)
+      - name: Bump version (minor)
         id: setver
         run: |
-          OUTPUT=$(node scripts/version-bump.js patch)
+          OUTPUT=$(node scripts/version-bump.js minor)
           echo "$OUTPUT"
           VERSION=$(echo "$OUTPUT" | sed -nE 's/^Bumped .* → ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   build-and-push-backend1:
     needs: [changes, setup-and-bump-version]
-    if: needs.changes.outputs.backend1 == 'true' && github.ref == 'refs/heads/dev'
+    if: needs.changes.outputs.backend1 == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to DockerHub
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.CICD_USERNAME }}
           password: ${{ secrets.CICD_PASSWORD }}
-      - name: Build and push backend1
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
           context: ./backend1
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend1:dev-${{ needs.setup-and-bump-version.outputs.version }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend1:prod-${{ needs.setup-and-bump-version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build-and-push-backend2:
     needs: [changes, setup-and-bump-version]
-    if: needs.changes.outputs.backend2 == 'true' && github.ref == 'refs/heads/dev'
+    if: needs.changes.outputs.backend2 == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to DockerHub
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.CICD_USERNAME }}
           password: ${{ secrets.CICD_PASSWORD }}
-      - name: Build and push backend2
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
           context: ./backend2
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/backend2:dev-${{ needs.setup-and-bump-version.outputs.version }}
+          tags: ${{ secrets.CICD_USERNAME }}/backend2:prod-${{ needs.setup-and-bump-version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build-and-push-frontend:
     needs: [changes, setup-and-bump-version]
-    if: needs.changes.outputs.frontend == 'true' && github.ref == 'refs/heads/dev'
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to DockerHub
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.CICD_USERNAME }}
           password: ${{ secrets.CICD_PASSWORD }}
-      - name: Build and push frontend
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.CICD_USERNAME }}/frontend:dev-${{ needs.setup-and-bump-version.outputs.version }}
+          tags: ${{ secrets.CICD_USERNAME }}/frontend:prod-${{ needs.setup-and-bump-version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
