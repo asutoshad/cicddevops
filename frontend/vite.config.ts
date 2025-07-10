@@ -10,3 +10,5 @@ export default defineConfig({
   base: '/cicddevops/', // This is CRITICAL for GitHub Pages
   plugins: [react()],
 })
+
+
