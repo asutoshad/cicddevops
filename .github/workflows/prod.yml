@@ -39,7 +39,8 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies (root)
-        run: npm ci
+        run: yarn install --frozen-lockfile
+
       - name: Bump version (minor)
         id: setver
         run: |
@@ -61,7 +62,8 @@ jobs:
           node-version: 18
 
       - name: Install dependencies (backend1)
-        run: npm ci
+        run: yarn install --frozen-lockfile
+
         working-directory: ./backend1
 
       - name: Build backend1
@@ -102,7 +104,8 @@ jobs:
           node-version: 18
 
       - name: Install dependencies (backend2)
-        run: npm ci
+        run: yarn install --frozen-lockfile
+
         working-directory: ./backend2
 
       - name: Build backend2
@@ -143,7 +146,8 @@ jobs:
           node-version: 18
 
       - name: Install dependencies (frontend)
-        run: npm ci
+        run: yarn install --frozen-lockfile
+
         working-directory: ./frontend
 
       - name: Build frontend
