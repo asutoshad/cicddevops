@@ -84,10 +84,10 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Upload backend1 build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend1-build-${{ needs.setup-and-bump-version.outputs.version }}
-          path: ./backend1/dist
+          path: ./backend1/build
 
   build-and-push-backend2:
     needs: [changes, setup-and-bump-version]
@@ -125,10 +125,10 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Upload backend2 build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend2-build-${{ needs.setup-and-bump-version.outputs.version }}
-          path: ./backend2/dist
+          path: ./backend2/build
 
   build-and-push-frontend:
     needs: [changes, setup-and-bump-version]
@@ -166,7 +166,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Upload frontend build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build-${{ needs.setup-and-bump-version.outputs.version }}
-          path: ./frontend/dist
+          path: ./frontend/build
