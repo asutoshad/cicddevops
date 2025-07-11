@@ -7,7 +7,7 @@ import react from '@vitejs/plugin-react'
 // })
 
 export default defineConfig({
-  base: '/cicddevops/', // This is CRITICAL for GitHub Pages
+  base: '/cicddevops/frontend/dist/', // This is CRITICAL for GitHub Pages
   plugins: [react()],
 })
 
