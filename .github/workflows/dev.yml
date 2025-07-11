@@ -160,7 +160,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies (frontend)
-        run: yarn install --frozen-lockfile
+        run: yarn install 
 
         working-directory: ./frontend
 
