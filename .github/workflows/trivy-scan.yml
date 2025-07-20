@@ -1,0 +1,62 @@
+name: Trivy Security Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  trivy-security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend1 image
+        run: docker build -t backend1-image ./backend1
+
+      - name: Build backend2 image
+        run: docker build -t backend2-image ./backend2
+
+      - name: Build frontend image
+        run: docker build -t frontend-image ./frontend
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Download Trivy HTML template
+        run: |
+          wget https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl -O trivy-html.tpl
+
+      - name: Run Trivy on backend1
+        run: trivy image --skip-db-update --skip-java-db-update --format template --template "@trivy-html.tpl" -o backend1-report.html backend1-image
+
+      - name: Run Trivy on backend2
+        run: trivy image --skip-db-update --skip-java-db-update --format template --template "@trivy-html.tpl" -o backend2-report.html backend2-image
+
+      - name: Run Trivy on frontend
+        run: trivy image --skip-db-update --skip-java-db-update --format template --template "@trivy-html.tpl" -o frontend-report.html frontend-image
+
+      - name: Combine Reports
+        run: |
+          mkdir -p scan
+          echo "<h1>Trivy Scan Report</h1>" > scan/report.html
+          echo "<h2>Frontend</h2>" >> scan/report.html
+          cat frontend-report.html >> scan/report.html
+          echo "<h2>Backend1</h2>" >> scan/report.html
+          cat backend1-report.html >> scan/report.html
+          echo "<h2>Backend2</h2>" >> scan/report.html
+          cat backend2-report.html >> scan/report.html
+
+      - name: Deploy Scan Report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./scan
+          destination_dir: scan
+          publish_branch: gh-pages
