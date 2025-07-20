@@ -1,0 +1,60 @@
+name: Trivy Security Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target to scan (docker-image or directory)'
+        required: true
+        type: choice
+        options:
+          - backend1
+          - backend2
+          - frontend
+      scan_type:
+        description: 'Scan type'
+        required: true
+        type: choice
+        default: docker
+        options:
+          - docker
+          - filesystem
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get install wget -y
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.50.1_Linux-64bit.deb
+
+      - name: Set scan target
+        id: set-scan-target
+        run: |
+          if [ "${{ github.event.inputs.scan_type }}" = "docker" ]; then
+            echo "target=${{ secrets.CICD_USERNAME }}/${{ github.event.inputs.target }}:latest" >> $GITHUB_OUTPUT
+          else
+            echo "target=./${{ github.event.inputs.target }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Trivy scan and generate HTML report
+        run: |
+          mkdir -p trivy-report/${{ github.event.inputs.target }}
+          trivy ${{ github.event.inputs.scan_type }} "${{ steps.set-scan-target.outputs.target }}" \
+            --format template \
+            --template "@contrib/html.tpl" \
+            --output "trivy-report/${{ github.event.inputs.target }}/index.html"
+
+      - name: Publish to GitHub Pages (/scan)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GH_PAT }}
+          publish_branch: gh-pages
+          destination_dir: scan/${{ github.event.inputs.target }}
+          publish_dir: ./trivy-report/${{ github.event.inputs.target }}
