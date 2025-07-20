@@ -1,13 +1,13 @@
-
-
 FROM node:18-alpine AS builder
 
 WORKDIR /app
-ENV YARN_NETWORK_TIMEOUT 600000
 COPY package.json yarn.lock ./
+ENV YARN_NETWORK_TIMEOUT=600000
 RUN yarn install
 COPY . .
 RUN yarn build
+
+
 
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
