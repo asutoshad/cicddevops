@@ -13,9 +13,36 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # --- START: ADDED BUILD STEPS ---
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies and build backend1
+        run: |
+          yarn install --frozen-lockfile
+          npm run build
+        working-directory: ./backend1
+
+      - name: Install dependencies and build backend2
+        run: |
+          yarn install --frozen-lockfile
+          npm run build
+        working-directory: ./backend2
+
+      - name: Install dependencies and build frontend
+        run: |
+          yarn install --frozen-lockfile
+          npm run build
+        working-directory: ./frontend
+      # --- END: ADDED BUILD STEPS ---
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Now, the 'docker build' commands will succeed because the 'dist'
+      # and 'node_modules' directories exist, and the new Dockerfile expects them.
       - name: Build backend1 image
         run: docker build -t backend1-image ./backend1
 
