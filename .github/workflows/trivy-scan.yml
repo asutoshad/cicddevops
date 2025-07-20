@@ -9,13 +9,20 @@ on:
 jobs:
   trivy-security-scan:
     runs-on: ubuntu-latest
+
+    # --- START: PERMISSIONS FIX ---
+    # This block grants the necessary permissions to the GITHUB_TOKEN.
+    # 'contents: write' is required to push the gh-pages branch.
+    # 'pages: write' is required to create the GitHub Pages deployment.
+    permissions:
+      contents: write
+      pages: write
+    # --- END: PERMISSIONS FIX ---
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # --- START: BUILD STEPS ---
-      # These steps are necessary to build your application code and install dependencies
-      # before the Docker image is created. This avoids network issues inside Docker.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -38,13 +45,10 @@ jobs:
           yarn install --frozen-lockfile
           npm run build
         working-directory: ./frontend
-      # --- END: BUILD STEPS ---
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # These commands will now succeed because the 'dist' and 'node_modules'
-      # directories were created in the previous steps.
       - name: Build backend1 image
         run: docker build -t backend1-image ./backend1
 
@@ -62,9 +66,6 @@ jobs:
         run: |
           wget https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl -O trivy-html.tpl
 
-      # --- START: TRIVY SCAN STEPS (CORRECTED) ---
-      # The '--skip-db-update' flags have been removed. This allows Trivy to download
-      # its vulnerability database on the first run, fixing the fatal error.
       - name: Run Trivy on backend1
         run: trivy image --format template --template "@trivy-html.tpl" -o backend1-report.html backend1-image
 
@@ -73,7 +74,6 @@ jobs:
 
       - name: Run Trivy on frontend
         run: trivy image --format template --template "@trivy-html.tpl" -o frontend-report.html frontend-image
-      # --- END: TRIVY SCAN STEPS (CORRECTED) ---
 
       - name: Combine Reports into index.html
         run: |
