@@ -10,14 +10,10 @@ jobs:
   trivy-security-scan:
     runs-on: ubuntu-latest
 
-    # --- START: PERMISSIONS FIX ---
-    # This block grants the necessary permissions to the GITHUB_TOKEN.
-    # 'contents: write' is required to push the gh-pages branch.
-    # 'pages: write' is required to create the GitHub Pages deployment.
+
     permissions:
       contents: write
       pages: write
-    # --- END: PERMISSIONS FIX ---
 
     steps:
       - name: Checkout Code
