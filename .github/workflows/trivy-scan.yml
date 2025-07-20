@@ -42,21 +42,26 @@ jobs:
       - name: Run Trivy on frontend
         run: trivy image --skip-db-update --skip-java-db-update --format template --template "@trivy-html.tpl" -o frontend-report.html frontend-image
 
-      - name: Combine Reports
+      - name: Combine Reports into index.html
         run: |
           mkdir -p scan
-          echo "<h1>Trivy Scan Report</h1>" > scan/report.html
-          echo "<h2>Frontend</h2>" >> scan/report.html
-          cat frontend-report.html >> scan/report.html
-          echo "<h2>Backend1</h2>" >> scan/report.html
-          cat backend1-report.html >> scan/report.html
-          echo "<h2>Backend2</h2>" >> scan/report.html
-          cat backend2-report.html >> scan/report.html
+          echo "<html><head><title>Trivy Security Scan Report</title></head><body>" > scan/index.html
+          echo "<h1>Trivy Scan Report</h1>" >> scan/index.html
+
+          echo "<h2>Frontend</h2>" >> scan/index.html
+          cat frontend-report.html >> scan/index.html
+
+          echo "<h2>Backend1</h2>" >> scan/index.html
+          cat backend1-report.html >> scan/index.html
+
+          echo "<h2>Backend2</h2>" >> scan/index.html
+          cat backend2-report.html >> scan/index.html
+
+          echo "</body></html>" >> scan/index.html
 
       - name: Deploy Scan Report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./scan
-          destination_dir: scan
           publish_branch: gh-pages
